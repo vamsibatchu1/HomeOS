@@ -18,7 +18,7 @@ export function DomainTabs({ activeTab, onTabChange }: DomainTabsProps) {
   ];
 
   return (
-    <div className="sticky top-0 z-10 my-4" style={{ backgroundColor: 'var(--page-background)' }}>
+    <div className="sticky top-0 z-10 pt-1 pb-2" style={{ backgroundColor: 'var(--page-background)' }}>
       <div className="flex gap-2 justify-start pl-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

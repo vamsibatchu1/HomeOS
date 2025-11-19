@@ -68,6 +68,7 @@ export function AllTasksPage({ tasks, domain, onTaskClick }: AllTasksPageProps) 
                 onClick={() => toggleCategory(category)}
                 className="cursor-pointer"
               >
+                {/* Category Header Row */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <IconComponent className="w-5 h-5 text-[var(--color-gray-600)] flex-shrink-0" />
@@ -84,37 +85,42 @@ export function AllTasksPage({ tasks, domain, onTaskClick }: AllTasksPageProps) 
                     <ChevronRight className="w-5 h-5 text-[var(--color-gray-400)] flex-shrink-0" />
                   )}
                 </div>
-              </Card>
 
-              {isExpanded && (
-                <div className="mt-2 space-y-2 pl-4">
-                  {categoryTasks.map(task => (
-                    <Card
-                      key={task.id}
-                      onClick={() => onTaskClick(task)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-[var(--color-gray-900)] mb-1">
-                            {task.name}
-                          </h4>
-                          {task.description && (
-                            <p className="text-sm text-[var(--color-gray-500)] line-clamp-1">
-                              {task.description}
-                            </p>
-                          )}
+                {/* Task Rows - Inside the same card */}
+                {isExpanded && categoryTasks.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[var(--color-gray-200)]">
+                    {categoryTasks.map((task, index) => (
+                      <div key={task.id}>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTaskClick(task);
+                          }}
+                          className="flex items-center justify-between py-2 cursor-pointer hover:bg-[var(--color-gray-50)] px-2 -mx-2"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-[var(--color-gray-900)]">
+                              {task.name}
+                            </h4>
+                            {task.description && (
+                              <p className="text-sm text-[var(--color-gray-500)] line-clamp-1 mt-0.5">
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[var(--color-gray-400)] flex-shrink-0 ml-2" />
                         </div>
-                        <ChevronRight className="w-5 h-5 text-[var(--color-gray-400)] flex-shrink-0 ml-2" />
+                        {index !== categoryTasks.length - 1 && categoryTasks.length > 1 && (
+                          <div className="border-b border-[var(--color-gray-200)] mx-2 py-1" />
+                        )}
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </Card>
             </div>
           );
         })}
     </div>
   );
 }
-
