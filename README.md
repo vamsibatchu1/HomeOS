@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HomeOS
+
+A personal operating system for household and life maintenance. Track recurring tasks, chores, reminders, and maintenance cycles across four major domains: Home, Car, Pet, and Life.
+
+## Features
+
+- **4 Domain Tabs**: Home, Car, Pet, and Life
+- **Today View**: See urgent tasks sorted by priority (overdue → due today → due soon → due this week)
+- **All Tasks View**: Browse all tasks organized by category with collapsible sections
+- **History View**: Track completed tasks with timestamps and notes
+- **Task Management**: 
+  - Mark tasks as done (auto-calculates next due date)
+  - Snooze tasks
+  - Edit task details
+  - Add custom tasks or choose from templates
+- **Frequency Support**: Daily, weekly, monthly, yearly, and custom frequencies
+- **Local Storage**: All data persists in browser localStorage
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Lucide React (Icons)
+- date-fns (Date utilities)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser. The app is optimized for mobile view (480px width).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+homeos/
+├── app/
+│   ├── layout.tsx          # Root layout
+│   ├── page.tsx            # Main app page
+│   └── globals.css         # Global styles and design system
+├── components/
+│   ├── domain/
+│   │   ├── DomainTabs.tsx  # Tab navigation (Today/All/History)
+│   │   └── DomainView.tsx  # Main domain container
+│   ├── navigation/
+│   │   └── BottomNav.tsx   # Bottom navigation bar
+│   ├── pages/
+│   │   ├── TodayPage.tsx   # Today's tasks view
+│   │   ├── AllTasksPage.tsx # All tasks view
+│   │   └── HistoryPage.tsx  # History view
+│   ├── tasks/
+│   │   ├── TaskCard.tsx     # Task card component
+│   │   ├── TaskDetailModal.tsx # Task detail/edit modal
+│   │   ├── AddTaskModal.tsx # Add task modal
+│   │   └── FloatingActionButton.tsx # FAB for adding tasks
+│   └── ui/
+│       ├── Button.tsx       # Reusable button component
+│       ├── Card.tsx         # Reusable card component
+│       ├── BottomSheet.tsx  # Bottom sheet modal
+│       └── Toast.tsx        # Toast notification
+├── data/
+│   └── templates.ts        # Pre-defined task templates
+├── lib/
+│   ├── dateUtils.ts        # Date calculation utilities
+│   ├── storage.ts          # LocalStorage utilities
+│   ├── initTasks.ts        # Task initialization
+│   └── utils.ts            # Utility functions
+└── types/
+    └── index.ts            # TypeScript type definitions
+```
 
-## Learn More
+## Design System
 
-To learn more about Next.js, take a look at the following resources:
+The app uses a mobile-first design system with CSS variables for consistent theming:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Colors**: Primary green (#10b981), danger red, warning orange, info blue
+- **Spacing**: Consistent spacing scale (4px, 8px, 16px, 20px, 24px, 32px)
+- **Border Radius**: 8px, 12px, 16px, 20px, full
+- **Shadows**: Subtle shadows for elevation
+- **Typography**: Geist Sans font family
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Pre-loaded Categories
 
-## Deploy on Vercel
+### Home
+- Air Filters, Trash/Recycling, Lawn Care, House Cleaning, Pest Control, Water Filter Replacement, HVAC Service, Bills (HOA, Electricity, Water, Internet)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Car
+- Oil Change, Tire Rotation, Emissions Test, Car Wash, Insurance Renewal, Registration Renewal, License Renewal, General Service, Warranty Tracking
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Pet
+- Vaccinations, Heartworm Prevention, Flea & Tick Prevention, Food Refill Tracking, Grooming, Vet Checkups, Medications, Supplements
+
+### Life
+- Subscriptions (Netflix, Apple, Spotify), Bills (Rent/Mortgage, Credit Cards), Admin Documents (Passport, Driver's License), Financial (Credit Score), Health (Dental, Physical), Digital Hygiene (Password Rotation, Photo Cleanup), Important Dates (Anniversaries, Birthdays)
+
+## Future Enhancements
+
+- Push notifications
+- Swipe gestures (swipe right to complete, swipe left to snooze)
+- Receipt/photo/document attachments
+- Export history as CSV/PDF
+- Search functionality
+- AI pattern detection and insights
+- Multi-device sync
