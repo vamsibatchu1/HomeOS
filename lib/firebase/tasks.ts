@@ -16,6 +16,14 @@ import {
 import { db } from './config';
 import { TaskInstance, TaskHistory } from '@/types';
 
+// Helper to ensure db is available (client-side only)
+const getDb = () => {
+  if (typeof window === 'undefined' || !db) {
+    throw new Error('Firestore is only available on the client side');
+  }
+  return db;
+};
+
 const TASKS_COLLECTION = 'tasks';
 const HISTORY_COLLECTION = 'history';
 
@@ -111,7 +119,8 @@ const taskToDoc = (task: TaskInstance): any => {
 // Get all tasks
 export async function getTasks(): Promise<TaskInstance[]> {
   try {
-    const tasksRef = collection(db, TASKS_COLLECTION);
+    if (typeof window === 'undefined') return [];
+    const tasksRef = collection(getDb(), TASKS_COLLECTION);
     const q = query(tasksRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
@@ -125,7 +134,8 @@ export async function getTasks(): Promise<TaskInstance[]> {
 // Get tasks by domain
 export async function getTasksByDomain(domain: string): Promise<TaskInstance[]> {
   try {
-    const tasksRef = collection(db, TASKS_COLLECTION);
+    if (typeof window === 'undefined') return [];
+    const tasksRef = collection(getDb(), TASKS_COLLECTION);
     const q = query(tasksRef, where('domain', '==', domain), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
@@ -139,7 +149,8 @@ export async function getTasksByDomain(domain: string): Promise<TaskInstance[]> 
 // Get a single task by ID
 export async function getTask(taskId: string): Promise<TaskInstance | null> {
   try {
-    const taskRef = doc(db, TASKS_COLLECTION, taskId);
+    if (typeof window === 'undefined') return null;
+    const taskRef = doc(getDb(), TASKS_COLLECTION, taskId);
     const taskSnap = await getDoc(taskRef);
     
     if (taskSnap.exists()) {
@@ -155,7 +166,8 @@ export async function getTask(taskId: string): Promise<TaskInstance | null> {
 // Add a new task
 export async function addTask(task: Omit<TaskInstance, 'id'>): Promise<string> {
   try {
-    const tasksRef = collection(db, TASKS_COLLECTION);
+    if (typeof window === 'undefined') throw new Error('Cannot add task on server side');
+    const tasksRef = collection(getDb(), TASKS_COLLECTION);
     const docRef = await addDoc(tasksRef, taskToDoc(task as TaskInstance));
     return docRef.id;
   } catch (error) {
@@ -167,7 +179,8 @@ export async function addTask(task: Omit<TaskInstance, 'id'>): Promise<string> {
 // Update a task
 export async function updateTask(task: TaskInstance): Promise<void> {
   try {
-    const taskRef = doc(db, TASKS_COLLECTION, task.id);
+    if (typeof window === 'undefined') throw new Error('Cannot update task on server side');
+    const taskRef = doc(getDb(), TASKS_COLLECTION, task.id);
     await updateDoc(taskRef, taskToDoc(task));
   } catch (error) {
     console.error('Error updating task:', error);
@@ -178,7 +191,8 @@ export async function updateTask(task: TaskInstance): Promise<void> {
 // Delete a task
 export async function deleteTask(taskId: string): Promise<void> {
   try {
-    const taskRef = doc(db, TASKS_COLLECTION, taskId);
+    if (typeof window === 'undefined') throw new Error('Cannot delete task on server side');
+    const taskRef = doc(getDb(), TASKS_COLLECTION, taskId);
     await deleteDoc(taskRef);
   } catch (error) {
     console.error('Error deleting task:', error);
@@ -189,7 +203,8 @@ export async function deleteTask(taskId: string): Promise<void> {
 // Get all history
 export async function getHistory(): Promise<TaskHistory[]> {
   try {
-    const historyRef = collection(db, HISTORY_COLLECTION);
+    if (typeof window === 'undefined') return [];
+    const historyRef = collection(getDb(), HISTORY_COLLECTION);
     const q = query(historyRef, orderBy('completedAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
@@ -215,7 +230,8 @@ export async function getHistory(): Promise<TaskHistory[]> {
 // Get history by domain
 export async function getHistoryByDomain(domain: string): Promise<TaskHistory[]> {
   try {
-    const historyRef = collection(db, HISTORY_COLLECTION);
+    if (typeof window === 'undefined') return [];
+    const historyRef = collection(getDb(), HISTORY_COLLECTION);
     const q = query(
       historyRef, 
       where('domain', '==', domain),
@@ -245,7 +261,8 @@ export async function getHistoryByDomain(domain: string): Promise<TaskHistory[]>
 // Add history entry
 export async function addHistoryEntry(entry: Omit<TaskHistory, 'id'>): Promise<string> {
   try {
-    const historyRef = collection(db, HISTORY_COLLECTION);
+    if (typeof window === 'undefined') throw new Error('Cannot add history on server side');
+    const historyRef = collection(getDb(), HISTORY_COLLECTION);
     const docRef = await addDoc(historyRef, {
       taskInstanceId: entry.taskInstanceId,
       taskName: entry.taskName,

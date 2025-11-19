@@ -1,9 +1,8 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
 
 // Firebase configuration
-// TODO: Replace with your actual Firebase config
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,14 +12,26 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only on client side
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+let auth: Auth | undefined;
 
-// Initialize Firestore
-export const db = getFirestore(app);
+if (typeof window !== 'undefined') {
+  // Only initialize if not already initialized
+  if (getApps().length === 0) {
+    if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+      app = initializeApp(firebaseConfig);
+    }
+  } else {
+    app = getApps()[0];
+  }
 
-// Initialize Auth
-export const auth = getAuth(app);
+  if (app) {
+    db = getFirestore(app);
+    auth = getAuth(app);
+  }
+}
 
+export { db, auth };
 export default app;
-

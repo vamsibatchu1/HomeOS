@@ -8,6 +8,7 @@ import { TaskInstance } from '@/types';
  */
 export async function migrateTaskDescriptions(): Promise<void> {
   try {
+    if (typeof window === 'undefined') return; // Only run on client side
     console.log('Starting description migration...');
     const tasks = await getTasks();
     const templateMap = new Map(taskTemplates.map(t => [t.id, t]));
