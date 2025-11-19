@@ -6,9 +6,10 @@ import { Domain, TaskInstance, TaskHistory } from '@/types';
 import { BottomNav } from '@/components/navigation/BottomNav';
 import { DomainView } from '@/components/domain/DomainView';
 import { Toast } from '@/components/ui/Toast';
-import { getTasks, saveTasks, getHistory, addHistoryEntry, updateTask, addTask, deleteTask } from '@/lib/storage';
+import { getTasks, getHistory, addHistoryEntry, updateTask, addTask, deleteTask } from '@/lib/storage';
 import { calculateNextDueDate } from '@/lib/dateUtils';
 import { initializeDefaultTasks } from '@/lib/initTasks';
+import { migrateTaskDescriptions } from '@/lib/migrateDescriptions';
 
 export default function Home() {
   const [currentDomain, setCurrentDomain] = useState<Domain>('home');
@@ -16,26 +17,57 @@ export default function Home() {
   const [history, setHistory] = useState<TaskHistory[]>([]);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Initialize tasks on mount
   useEffect(() => {
-    const storedTasks = getTasks();
-    const storedHistory = getHistory();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [storedTasks, storedHistory] = await Promise.all([
+          getTasks(),
+          getHistory(),
+        ]);
 
-    if (storedTasks.length === 0) {
-      // Initialize with default tasks for all domains
-      const allDefaultTasks: TaskInstance[] = [];
-      (['home', 'car', 'pet', 'life'] as Domain[]).forEach(domain => {
-        const domainTasks = initializeDefaultTasks(domain);
-        allDefaultTasks.push(...domainTasks);
-      });
-      saveTasks(allDefaultTasks);
-      setTasks(allDefaultTasks);
-    } else {
-      setTasks(storedTasks);
-    }
+        if (storedTasks.length === 0) {
+          // Initialize with default tasks for all domains
+          const allDefaultTasks: TaskInstance[] = [];
+          (['home', 'car', 'pet', 'life'] as Domain[]).forEach(domain => {
+            const domainTasks = initializeDefaultTasks(domain);
+            allDefaultTasks.push(...domainTasks);
+          });
+          
+          // Add all default tasks to Firebase
+          for (const task of allDefaultTasks) {
+            await addTask(task);
+          }
+          
+          // Reload tasks after adding defaults
+          const updatedTasks = await getTasks();
+          setTasks(updatedTasks);
+        } else {
+          setTasks(storedTasks);
+          // Migrate descriptions for existing tasks (runs once)
+          try {
+            await migrateTaskDescriptions();
+            // Reload tasks after migration
+            const migratedTasks = await getTasks();
+            setTasks(migratedTasks);
+          } catch (error) {
+            console.error('Migration error (non-critical):', error);
+          }
+        }
 
-    setHistory(storedHistory);
+        setHistory(storedHistory);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showToastMessage('Error loading tasks. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   const showToastMessage = (message: string) => {
@@ -43,70 +75,111 @@ export default function Home() {
     setShowToast(true);
   };
 
-  const handleMarkDone = (task: TaskInstance) => {
-    const completedDate = new Date();
-    const nextDueDate = calculateNextDueDate(task, completedDate);
+  const handleMarkDone = async (task: TaskInstance) => {
+    try {
+      const completedDate = new Date();
+      const nextDueDate = calculateNextDueDate(task, completedDate);
 
-    // Update task
-    const updatedTask: TaskInstance = {
-      ...task,
-      lastCompleted: completedDate,
-      nextDueDate,
-    };
+      // Update task
+      const updatedTask: TaskInstance = {
+        ...task,
+        lastCompleted: completedDate,
+        nextDueDate,
+      };
 
-    updateTask(updatedTask);
-    setTasks(getTasks());
+      await updateTask(updatedTask);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
 
-    // Add to history
-    const historyEntry: TaskHistory = {
-      id: `history-${Date.now()}-${task.id}`,
-      taskInstanceId: task.id,
-      taskName: task.name,
-      category: task.category,
-      domain: task.domain,
-      completedAt: completedDate,
-      notes: task.notes,
-      cost: task.cost,
-    };
+      // Add to history
+      const historyEntry: TaskHistory = {
+        id: `history-${Date.now()}-${task.id}`,
+        taskInstanceId: task.id,
+        taskName: task.name,
+        category: task.category,
+        domain: task.domain,
+        completedAt: completedDate,
+        notes: task.notes,
+        cost: task.cost,
+      };
 
-    addHistoryEntry(historyEntry);
-    setHistory(getHistory());
+      await addHistoryEntry(historyEntry);
+      const updatedHistory = await getHistory();
+      setHistory(updatedHistory);
 
-    showToastMessage(`${task.name} marked as done!`);
+      showToastMessage(`${task.name} marked as done!`);
+    } catch (error) {
+      console.error('Error marking task as done:', error);
+      showToastMessage('Error updating task. Please try again.');
+    }
   };
 
-  const handleSnooze = (task: TaskInstance) => {
-    // Snooze by adding 1 day to next due date
-    const snoozedDate = new Date(task.nextDueDate);
-    snoozedDate.setDate(snoozedDate.getDate() + 1);
+  const handleSnooze = async (task: TaskInstance) => {
+    try {
+      // Snooze by adding 1 day to next due date
+      const snoozedDate = new Date(task.nextDueDate);
+      snoozedDate.setDate(snoozedDate.getDate() + 1);
 
-    const updatedTask: TaskInstance = {
-      ...task,
-      nextDueDate: snoozedDate,
-    };
+      const updatedTask: TaskInstance = {
+        ...task,
+        nextDueDate: snoozedDate,
+      };
 
-    updateTask(updatedTask);
-    setTasks(getTasks());
-    showToastMessage(`${task.name} snoozed until ${snoozedDate.toLocaleDateString()}`);
+      await updateTask(updatedTask);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
+      showToastMessage(`${task.name} snoozed until ${snoozedDate.toLocaleDateString()}`);
+    } catch (error) {
+      console.error('Error snoozing task:', error);
+      showToastMessage('Error snoozing task. Please try again.');
+    }
   };
 
-  const handleTaskUpdate = (task: TaskInstance) => {
-    updateTask(task);
-    setTasks(getTasks());
-    showToastMessage(`${task.name} updated`);
+  const handleTaskUpdate = async (task: TaskInstance) => {
+    try {
+      await updateTask(task);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
+      showToastMessage(`${task.name} updated`);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      showToastMessage('Error updating task. Please try again.');
+    }
   };
 
-  const handleTaskDelete = (taskId: string) => {
-    deleteTask(taskId);
-    setTasks(getTasks());
-    showToastMessage('Task deleted');
+  const handleTaskDelete = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
+      showToastMessage('Task deleted');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      showToastMessage('Error deleting task. Please try again.');
+    }
   };
 
-  const handleAddTask = (task: TaskInstance) => {
-    addTask(task);
-    setTasks(getTasks());
-    showToastMessage(`${task.name} added!`);
+  const handleAddTask = async (task: TaskInstance) => {
+    try {
+      await addTask(task);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
+      showToastMessage(`${task.name} added!`);
+    } catch (error) {
+      console.error('Error adding task:', error);
+      showToastMessage('Error adding task. Please try again.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pb-20 flex items-center justify-center" style={{ backgroundColor: 'var(--page-background)' }}>
+        <div className="text-center">
+          <p className="text-[var(--color-gray-500)]">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--page-background)' }}>

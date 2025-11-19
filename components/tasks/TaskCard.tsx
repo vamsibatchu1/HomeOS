@@ -40,15 +40,15 @@ export function TaskCard({ task, onMarkDone, onSnooze }: TaskCardProps) {
     ? 'Due tomorrow'
     : `Due in ${daysUntilDue} days`;
 
-  // Get "Today" or last completed date
+  // Get last completed date (only show if it exists)
   const lastDoneText = task.lastCompleted 
     ? formatDate(task.lastCompleted)
-    : 'Today';
+    : null;
 
   return (
     <div className="mb-3 bg-white rounded-[24px] p-5 border border-[var(--color-gray-200)]">
       {/* Row 1: Icon and Task Name */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-3">
         {/* Icon - no background */}
         <div className="flex-shrink-0">
           {renderIcon()}
@@ -59,11 +59,20 @@ export function TaskCard({ task, onMarkDone, onSnooze }: TaskCardProps) {
         </div>
       </div>
 
-      {/* Row 2: Today, Frequency, Due Date - Horizontal Columns */}
-      <div className="mb-4 flex items-center gap-1">
-        <div className="text-sm text-[var(--color-gray-700)]">
-          {lastDoneText}
+      {/* Description Row */}
+      {task.description && (
+        <div className="mb-3">
+          <p className="text-sm text-[var(--color-gray-600)]">{task.description}</p>
         </div>
+      )}
+
+      {/* Row 2: Last Done (if exists), Frequency, Due Date - Horizontal Columns */}
+      <div className="mb-4 flex items-center gap-1">
+        {lastDoneText && (
+          <div className="text-sm text-[var(--color-gray-700)]">
+            {lastDoneText}
+          </div>
+        )}
         <div className="text-sm text-[var(--color-gray-700)]">
           {formatFrequency(task.frequency)}
         </div>
